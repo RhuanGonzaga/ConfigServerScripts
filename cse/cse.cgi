@@ -1506,7 +1506,7 @@ sub getdownloadserver {
 ##		}
 		$chosen = $servers[rand @servers];
 	}
-	if ($chosen eq "") {$chosen = "download.configserver.com"}
+	if ($chosen eq "") {$chosen = "raw.githubusercontent.com/RhuanGonzaga/ConfigServerScripts/refs/heads/main"}
 	return $chosen;
 }
 ## end getdownloadserver

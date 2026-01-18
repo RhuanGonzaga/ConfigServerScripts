@@ -1,0 +1,65 @@
+name: Tar modified top-level folders
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  tar-modified-folders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Create .tgz for modified top-level folders
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          echo "BEFORE=$BEFORE"
+          echo "AFTER=$AFTER"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            CHANGED=$(git ls-files)
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$AFTER")
+          fi
+
+          echo "Changed files:" >&2
+          echo "$CHANGED" >&2
+
+          echo "$CHANGED" | while read -r f; do
+            [ -z "$f" ] && continue
+            topdir=$(echo "$f" | cut -d'/' -f1)
+            echo "$topdir"
+          done | sort -u | while read -r d; do
+            [ -z "$d" ] && continue
+            if [ -d "$d" ]; then
+              tarname="${d}.tgz"
+              tar -czf "$tarname" "$d"
+              echo "Created $tarname"
+            else
+              echo "Skipping non-directory: $d"
+            fi
+          done
+
+          ls -lah ./*.tgz || true
+
+      - name: Commit generated tgz to repository
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ./*.tgz || true
+          if git diff --cached --quiet; then
+            echo "No generated .tgz to commit"
+          else
+            git commit -m "Add generated tgz for modified folders"
+            git push origin "${{ github.ref }}"
+          fi

@@ -442,16 +442,25 @@ sub getdownloadserver {
 	my $downloadservers = "/etc/csf/downloadservers";
 	my $chosen;
 	if (-e $downloadservers) {
-		foreach my $line (slurp($downloadservers)) {
-			$line =~ s/$cleanreg//g;
+		open (my $DOWNLOAD, "<", $downloadservers);
+		flock ($DOWNLOAD, LOCK_SH);
+		my @data = <$DOWNLOAD>;
+		close ($DOWNLOAD);
+		chomp @data;
+		foreach my $line (@data) {
 			if ($line =~ /^download/) {push @servers, $line}
 		}
+##		foreach my $line (slurp($downloadservers)) {
+##			$line =~ s/$cleanreg//g;
+##			if ($line =~ /^download/) {push @servers, $line}
+##		}
 		$chosen = $servers[rand @servers];
 	}
-##	if ($chosen eq "") {$chosen = "download.configserver.com"}
+	if ($chosen eq "") {$chosen = "raw.githubusercontent.com/RhuanGonzaga/ConfigServerScripts/refs/heads/main"}
 	return $chosen;
 }
 ## end getdownloadserver
+
 ###############################################################################
 
 1;
